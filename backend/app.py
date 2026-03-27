@@ -139,7 +139,11 @@ def start_interview():
     global question_count, current_subject, checkpointer, agent
     global current_session_id, current_mode, current_question_text
 
-    data           = request.get_json()
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON data received"}), 400
+
+    current_subject = data.get("subject", "Python")
     current_subject = data.get("subject", "Python")
     current_mode   = data.get("mode", "voice")      # "voice" or "coding"
     resume_text    = data.get("resume_text", "")    # pre-parsed on upload
