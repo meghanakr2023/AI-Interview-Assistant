@@ -30,7 +30,9 @@ ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
 aai.settings.api_key = ASSEMBLYAI_API_KEY
 
 app = Flask(__name__)
-CORS(app, expose_headers=["X-Question-Number", "X-Emotion-Data"])
+CORS(app, 
+     origins=["https://ai-interview-assistant-pink.vercel.app", "http://localhost:8080"],
+     expose_headers=["X-Question-Number", "X-Emotion-Data", "X-Exec-Output", "X-Exec-Success"])
 
 # ── LLM setup ────────────────────────────────────────────────────────────────
 model = init_chat_model("google_genai:gemini-2.5-flash", api_key=GOOGLE_API_KEY)
@@ -350,6 +352,5 @@ def session_detail(session_id):
 
 
 if __name__ == "__main__":
-    CORS(app, resources={r"/*": {"origins": "*"}})
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
