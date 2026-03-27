@@ -8,3 +8,4 @@ requests
 langchain-google-genai
 PyMuPDF
 pymongo
+gunicorn

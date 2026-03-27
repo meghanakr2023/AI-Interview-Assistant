@@ -26,6 +26,7 @@ GOOGLE_API_KEY    = os.getenv("GOOGLE_API_KEY")
 MURF_API_KEY      = os.getenv("MURF_API_KEY")
 ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
 
+
 aai.settings.api_key = ASSEMBLYAI_API_KEY
 
 app = Flask(__name__)
@@ -349,4 +350,5 @@ def session_detail(session_id):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
