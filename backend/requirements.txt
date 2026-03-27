@@ -1,0 +1,10 @@
+flask
+flask-cors
+python-dotenv
+langchain
+langgraph
+assemblyai
+requests
+langchain-google-genai
+PyMuPDF
+pymongo
