@@ -11,7 +11,7 @@ let monacoEditor        = null;
 let currentProblemIndex = 0;
 let codingStarted       = false;
 
-const BASE_URL = "http://127.0.0.1:5000";
+const BASE_URL = "https://ai-interview-assistant-hs8y.onrender.com";
 
 // ── Body Language State ───────────────────────────────────────────────────────
 let faceMesh            = null;
