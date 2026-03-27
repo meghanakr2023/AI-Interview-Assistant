@@ -22,10 +22,10 @@ let isAnalyzing         = false;
 // Accumulate scores across entire interview
 let blFrames = {
     total:          0,
-    eyeContact:     0,   // frames where user is looking at screen
-    goodPosture:    0,   // frames where face is upright and centered
-    positiveExpr:   0,   // frames where mouth corners are up (smile)
-    faceVisible:    0,   // frames where face is detected at all
+    eyeContact:     0,
+    goodPosture:    0,
+    positiveExpr:   0,
+    faceVisible:    0,
 };
 
 // Coding problems
@@ -161,7 +161,6 @@ function onFaceMeshResults(results) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
-        // No face detected
         eyeIndicator.style.background    = "#ef4444";
         eyeIndicator.style.boxShadow     = "0 0 6px #ef4444";
         blFrames.total++;
@@ -175,10 +174,7 @@ function onFaceMeshResults(results) {
     const W = canvas.width;
     const H = canvas.height;
 
-    // ── 1. Eye Contact Detection ─────────────────────────────────────────────
-    // Compare iris position relative to eye corners
-    // Left iris: 468, Left eye corners: 33 (left), 133 (right)
-    // Right iris: 473, Right eye corners: 362 (left), 263 (right)
+    // Eye Contact Detection
     const leftIris   = landmarks[468];
     const leftInner  = landmarks[133];
     const leftOuter  = landmarks[33];
@@ -193,7 +189,7 @@ function onFaceMeshResults(results) {
     const rightIrisOffset = Math.abs(rightIris.x - (rightInner.x + rightOuter.x) / 2) / (rightEyeWidth + 0.001);
 
     const avgIrisOffset = (leftIrisOffset + rightIrisOffset) / 2;
-    const isLookingAtScreen = avgIrisOffset < 0.25;  // threshold
+    const isLookingAtScreen = avgIrisOffset < 0.25;
 
     if (isLookingAtScreen) {
         blFrames.eyeContact++;
@@ -204,36 +200,25 @@ function onFaceMeshResults(results) {
         eyeIndicator.style.boxShadow  = "0 0 6px #f59e0b";
     }
 
-    // ── 2. Posture Detection ──────────────────────────────────────────────────
-    // Use nose tip (1) and face center horizontal position
-    // Good posture = face is centered horizontally and nose is roughly level
-    const noseTip    = landmarks[1];
-    const faceCenter = { x: noseTip.x, y: noseTip.y };
-
-    const horizontalOffset = Math.abs(faceCenter.x - 0.5);   // 0 = center
+    // Posture Detection
+    const noseTip          = landmarks[1];
+    const horizontalOffset = Math.abs(noseTip.x - 0.5);
     const isCentered       = horizontalOffset < 0.15;
-
-    // Check head tilt using left eye (33) vs right eye (263) y-difference
-    const eyeYDiff  = Math.abs(landmarks[33].y - landmarks[263].y);
-    const isUpright = eyeYDiff < 0.04;
-
+    const eyeYDiff         = Math.abs(landmarks[33].y - landmarks[263].y);
+    const isUpright        = eyeYDiff < 0.04;
     if (isCentered && isUpright) blFrames.goodPosture++;
 
-    // ── 3. Expression Detection (Smile) ───────────────────────────────────────
-    // Mouth corners: 61 (left), 291 (right), top lip center: 13
-    const mouthLeft   = landmarks[61];
-    const mouthRight  = landmarks[291];
-    const mouthTop    = landmarks[13];
-    const mouthBottom = landmarks[14];
-
-    // Mouth corner elevation relative to mouth center
-    const mouthCenterY  = (mouthTop.y + mouthBottom.y) / 2;
-    const cornerAvgY    = (mouthLeft.y + mouthRight.y) / 2;
-    const smileScore    = mouthCenterY - cornerAvgY;  // positive = corners above center = smile
-
+    // Expression Detection
+    const mouthLeft    = landmarks[61];
+    const mouthRight   = landmarks[291];
+    const mouthTop     = landmarks[13];
+    const mouthBottom  = landmarks[14];
+    const mouthCenterY = (mouthTop.y + mouthBottom.y) / 2;
+    const cornerAvgY   = (mouthLeft.y + mouthRight.y) / 2;
+    const smileScore   = mouthCenterY - cornerAvgY;
     if (smileScore > 0.005) blFrames.positiveExpr++;
 
-    // ── 4. Draw subtle dot landmarks on canvas (optional visual) ─────────────
+    // Draw landmarks
     ctx.fillStyle = "rgba(102,126,234,0.6)";
     [33, 263, 1, 61, 291, 468, 473].forEach(idx => {
         const lm = landmarks[idx];
@@ -250,19 +235,15 @@ async function startWebcam() {
             audio: false,
         });
         webcamVideo.srcObject = webcamStream;
-
         await new Promise(resolve => { webcamVideo.onloadedmetadata = resolve; });
         webcamVideo.play();
 
         webcamPip.style.display = "block";
         isAnalyzing = true;
-
-        // Reset counters
         blFrames = { total: 0, eyeContact: 0, goodPosture: 0, positiveExpr: 0, faceVisible: 0 };
 
         initFaceMesh();
 
-        // Run face mesh on video frames
         webcamCamera = new Camera(webcamVideo, {
             onFrame: async () => {
                 if (isAnalyzing && faceMesh) {
@@ -293,12 +274,11 @@ function stopWebcam() {
 function computeBodyLanguageResults() {
     if (blFrames.total === 0) return null;
 
-    const eyePct        = Math.round((blFrames.eyeContact    / blFrames.total) * 100);
-    const posturePctVal = Math.round((blFrames.goodPosture   / blFrames.total) * 100);
-    const exprPctVal    = Math.round((blFrames.positiveExpr  / blFrames.total) * 100);
-    const visPctVal     = Math.round((blFrames.faceVisible   / blFrames.total) * 100);
+    const eyePct        = Math.round((blFrames.eyeContact   / blFrames.total) * 100);
+    const posturePctVal = Math.round((blFrames.goodPosture  / blFrames.total) * 100);
+    const exprPctVal    = Math.round((blFrames.positiveExpr / blFrames.total) * 100);
+    const visPctVal     = Math.round((blFrames.faceVisible  / blFrames.total) * 100);
 
-    // Overall score = weighted average
     const overall = Math.round(
         eyePct        * 0.40 +
         posturePctVal * 0.30 +
@@ -306,14 +286,12 @@ function computeBodyLanguageResults() {
         visPctVal     * 0.15
     );
 
-    // Label
     let label, labelColor;
-    if (overall >= 75) { label = "Excellent Presence";  labelColor = "text-green-400"; }
-    else if (overall >= 55) { label = "Good Presence";  labelColor = "text-yellow-400"; }
-    else if (overall >= 35) { label = "Needs Improvement"; labelColor = "text-orange-400"; }
-    else                    { label = "Poor Presence";  labelColor = "text-red-400"; }
+    if (overall >= 75)      { label = "Excellent Presence";   labelColor = "text-green-400"; }
+    else if (overall >= 55) { label = "Good Presence";        labelColor = "text-yellow-400"; }
+    else if (overall >= 35) { label = "Needs Improvement";    labelColor = "text-orange-400"; }
+    else                    { label = "Poor Presence";        labelColor = "text-red-400"; }
 
-    // Tips
     const tips = [];
     if (eyePct < 60)        tips.push({ icon: "👁️", text: "Maintain more eye contact — look directly at the camera." });
     if (posturePctVal < 60) tips.push({ icon: "🧍", text: "Sit upright and keep your face centered in the frame." });
@@ -329,28 +307,21 @@ function displayBodyLanguageResults() {
     if (!results) return;
 
     bodyLangCard.classList.remove("hidden");
-
-    // Animate score
     bodyLangScore.textContent = results.overall;
     bodyLangLabel.textContent = results.label;
     bodyLangLabel.className   = `font-bold text-base ${results.labelColor}`;
 
-    // Animate bars (slight delay so CSS transition fires)
     setTimeout(() => {
         eyeContactPct.textContent = results.eyePct + "%";
         eyeContactBar.style.width = results.eyePct + "%";
-
-        posturePct.textContent = results.posturePctVal + "%";
-        postureBar.style.width = results.posturePctVal + "%";
-
+        posturePct.textContent    = results.posturePctVal + "%";
+        postureBar.style.width    = results.posturePctVal + "%";
         expressionPct.textContent = results.exprPctVal + "%";
         expressionBar.style.width = results.exprPctVal + "%";
-
         visibilityPct.textContent = results.visPctVal + "%";
         visibilityBar.style.width = results.visPctVal + "%";
     }, 300);
 
-    // Tips
     bodyLangTips.innerHTML = results.tips.map(t =>
         `<p class="text-xs text-gray-400 flex items-start gap-2">
             <span>${t.icon}</span><span>${t.text}</span>
@@ -360,24 +331,29 @@ function displayBodyLanguageResults() {
 
 
 // ════════════════════════════════════════════════════════════════════════════
-// MONACO EDITOR
+// MONACO EDITOR — Fixed: waits for monaco to load before initialising
 // ════════════════════════════════════════════════════════════════════════════
-
-
 
 function initMonaco() {
     if (monacoEditor) return;
-    require(["vs/editor/editor.main"], () => {
-        monacoEditor = monaco.editor.create(monacoContainer, {
-            value:               "# Write your solution here\n\n",
-            language:            "python",
-            theme:               "vs-dark",
-            fontSize:            14,
-            minimap:             { enabled: false },
-            scrollBeyondLastLine: false,
-            automaticLayout:     true,
-        });
-    });
+
+    function tryInit() {
+        if (typeof monaco !== "undefined") {
+            monacoEditor = monaco.editor.create(monacoContainer, {
+                value:                "# Write your solution here\n\n",
+                language:             "python",
+                theme:                "vs-dark",
+                fontSize:             14,
+                minimap:              { enabled: false },
+                scrollBeyondLastLine: false,
+                automaticLayout:      true,
+            });
+        } else {
+            // Monaco not ready yet — retry in 300ms
+            setTimeout(tryInit, 300);
+        }
+    }
+    tryInit();
 }
 
 langSelect.addEventListener("change", () => {
@@ -406,8 +382,8 @@ function setMode(mode) {
     }
 }
 
-modeVoiceBtn.addEventListener("click",   () => setMode("voice"));
-modeCodingBtn.addEventListener("click",  () => setMode("coding"));
+modeVoiceBtn.addEventListener("click",  () => setMode("voice"));
+modeCodingBtn.addEventListener("click", () => setMode("coding"));
 
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -485,19 +461,19 @@ function showInterviewPanel(subject) {
     } else {
         voiceControls.classList.add("hidden");
         codingControls.classList.remove("hidden");
-        modeLabel.textContent = "💻 Coding";
+        modeLabel.textContent    = "💻 Coding";
         problemBox.classList.add("hidden");
         runCodeBtn.classList.add("hidden");
-        runCodeBtn.disabled   = true;
+        runCodeBtn.disabled      = true;
         codingStatus.textContent = "Click Start Coding Interview";
     }
     endInterviewBtn.disabled = true;
 }
 
 function enableRecording() {
-    recordBtn.disabled           = false;
-    endInterviewBtn.disabled     = false;
-    recordingStatus.textContent  = "Click to record";
+    recordBtn.disabled          = false;
+    endInterviewBtn.disabled    = false;
+    recordingStatus.textContent = "Click to record";
 }
 
 function disableRecording() {
@@ -507,7 +483,7 @@ function disableRecording() {
 }
 
 function showFeedbackSection() {
-    stopWebcam();                               // stop webcam when interview ends
+    stopWebcam();
     feedbackSection.classList.remove("hidden");
     getFeedbackArea.classList.remove("hidden");
     feedbackContent.classList.add("hidden");
@@ -524,13 +500,12 @@ function displayFeedback(data) {
     const offset = 301.6 - ((data.candidate_score || 0) / 5) * 301.6;
     scoreCircle.style.strokeDashoffset = offset;
 
-    feedbackText.textContent    = data.feedback              || "No feedback available";
-    improvementText.textContent = data.areas_of_improvement  || "No suggestions";
+    feedbackText.textContent    = data.feedback             || "No feedback available";
+    improvementText.textContent = data.areas_of_improvement || "No suggestions";
 
     getFeedbackArea.classList.add("hidden");
     feedbackContent.classList.remove("hidden");
 
-    // Show body language results
     displayBodyLanguageResults();
 }
 
@@ -580,8 +555,8 @@ function resetToWelcome() {
     emotionPanel.classList.add("hidden");
     bodyLangCard.classList.add("hidden");
 
-    recordBtn.classList.remove("bg-red-500","text-white","recording-active");
-    recordBtn.classList.add("bg-zinc-800/80","text-gray-400");
+    recordBtn.classList.remove("bg-red-500", "text-white", "recording-active");
+    recordBtn.classList.add("bg-zinc-800/80", "text-gray-400");
     micIcon.classList.remove("hidden");
     stopIcon.classList.add("hidden");
     submitBtn.classList.add("hidden");
@@ -683,11 +658,11 @@ function startRecording() {
         };
         mediaRecorder.start();
 
-        recordBtn.classList.remove("bg-zinc-800/80","text-gray-400");
-        recordBtn.classList.add("bg-red-500","text-white","recording-active");
+        recordBtn.classList.remove("bg-zinc-800/80", "text-gray-400");
+        recordBtn.classList.add("bg-red-500", "text-white", "recording-active");
         micIcon.classList.add("hidden");
         stopIcon.classList.remove("hidden");
-        recordingStatus.textContent  = "Recording...";
+        recordingStatus.textContent = "Recording...";
         submitBtn.classList.add("hidden");
         endInterviewBtn.disabled = true;
     });
@@ -696,8 +671,8 @@ function startRecording() {
 function stopRecording() {
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
         mediaRecorder.stop();
-        recordBtn.classList.remove("bg-red-500","text-white","recording-active");
-        recordBtn.classList.add("bg-zinc-800/80","text-gray-400");
+        recordBtn.classList.remove("bg-red-500", "text-white", "recording-active");
+        recordBtn.classList.add("bg-zinc-800/80", "text-gray-400");
         micIcon.classList.remove("hidden");
         stopIcon.classList.add("hidden");
         recordingStatus.textContent = "Recording complete";
@@ -716,7 +691,7 @@ async function startInterview() {
     recordBtn.classList.remove("hidden");
     recordingStatus.textContent = "Connecting...";
 
-    await startWebcam();   // 🎥 start webcam when interview starts
+    await startWebcam();
 
     try {
         const res = await fetch(`${BASE_URL}/start-interview`, {
@@ -785,7 +760,7 @@ async function startCodingInterview() {
     showCodingProblem(currentProblemIndex);
     codingStatus.textContent = "Write your solution and click Run & Submit";
 
-    await startWebcam();   // 🎥 start webcam for coding too
+    await startWebcam();
 
     try {
         const res = await fetch(`${BASE_URL}/start-interview`, {
@@ -822,7 +797,7 @@ async function runAndSubmitCode() {
         if (qNum) questionNum.textContent = qNum;
 
         if (execHeader) {
-            const execResult    = JSON.parse(atob(execHeader));
+            const execResult     = JSON.parse(atob(execHeader));
             execText.textContent = execResult.stdout || execResult.stderr || "No output";
             execText.className   = execResult.success
                 ? "text-green-400 whitespace-pre-wrap"
@@ -892,9 +867,9 @@ recordBtn.addEventListener("click", () => {
     (!mediaRecorder || mediaRecorder.state === "inactive")
         ? startRecording() : stopRecording();
 });
-submitBtn.addEventListener("click",          submitAnswer);
-endInterviewBtn.addEventListener("click",    endInterview);
-getFeedbackBtn.addEventListener("click",     getFeedback);
-newInterviewBtn.addEventListener("click",    resetToWelcome);
-startCodingBtn.addEventListener("click",     startCodingInterview);
-runCodeBtn.addEventListener("click",         runAndSubmitCode);
+submitBtn.addEventListener("click",       submitAnswer);
+endInterviewBtn.addEventListener("click", endInterview);
+getFeedbackBtn.addEventListener("click",  getFeedback);
+newInterviewBtn.addEventListener("click", resetToWelcome);
+startCodingBtn.addEventListener("click",  startCodingInterview);
+runCodeBtn.addEventListener("click",      runAndSubmitCode);

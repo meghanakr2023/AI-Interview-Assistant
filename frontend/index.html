@@ -7,11 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- MediaPipe Face Mesh — load BEFORE Monaco -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"
-        crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"
-        crossorigin="anonymous"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -39,11 +34,7 @@
         .glow-border { box-shadow: 0 0 30px rgba(102,126,234,0.2); }
         .sidebar-gradient { background: linear-gradient(180deg,#0a0a0a 0%,#000000 100%); }
         #monacoContainer { height: 300px; border-radius: 12px; overflow: hidden; border: 1px solid #3f3f46; }
-
-        /* Emotion bar */
         .emotion-bar-fill { transition: width 1s ease; }
-
-        /* Resume drop zone */
         .drop-zone {
             border: 2px dashed #52525b;
             transition: border-color 0.2s, background 0.2s;
@@ -52,69 +43,63 @@
             border-color: #667eea;
             background: rgba(102,126,234,0.08);
         }
-
-        /* Webcam PiP */
-#webcamPip {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    width: 160px;
-    height: 120px;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 2px solid #667eea;
-    box-shadow: 0 0 20px rgba(102,126,234,0.4);
-    z-index: 1000;
-    background: #000;
-    display: none;
-}
-#webcamPip video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: scaleX(-1); /* mirror */
-}
-#webcamPip canvas {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%;
-    height: 100%;
-    transform: scaleX(-1);
-}
-#pipLabel {
-    position: absolute;
-    bottom: 6px;
-    left: 8px;
-    font-size: 10px;
-    font-weight: 600;
-    color: white;
-    background: rgba(0,0,0,0.5);
-    padding: 2px 6px;
-    border-radius: 6px;
-}
-#eyeIndicator {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 6px #22c55e;
-}
-
-/* Body language feedback card */
-.body-lang-bar-fill { transition: width 1.2s ease; }
+        #webcamPip {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 160px;
+            height: 120px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid #667eea;
+            box-shadow: 0 0 20px rgba(102,126,234,0.4);
+            z-index: 1000;
+            background: #000;
+            display: none;
+        }
+        #webcamPip video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+        #webcamPip canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+        }
+        #pipLabel {
+            position: absolute;
+            bottom: 6px;
+            left: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+        #eyeIndicator {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 6px #22c55e;
+        }
+        .body-lang-bar-fill { transition: width 1.2s ease; }
     </style>
 </head>
 
 <body class="bg-black min-h-screen text-white font-inter">
 <div class="min-h-screen flex flex-col lg:flex-row">
 
-    <!-- ── Sidebar ── -->
+    <!-- Sidebar -->
     <aside class="w-full lg:w-1/5 sidebar-gradient border-b lg:border-b-0 lg:border-r border-zinc-800/50 p-4 lg:p-6 flex flex-col">
-
-        <!-- Logo -->
         <div class="flex items-center gap-3 mb-6">
             <div class="w-12 h-12 bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
                 <i class="fas fa-robot text-white text-xl"></i>
@@ -122,7 +107,6 @@
             <span class="font-space font-bold text-2xl tracking-tight gradient-heading">AI Interview</span>
         </div>
 
-        <!-- Resume Upload -->
         <div class="mb-5">
             <h3 class="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-2">Upload Resume (optional)</h3>
             <div id="dropZone" class="drop-zone rounded-xl p-4 text-center cursor-pointer">
@@ -133,7 +117,6 @@
             <p id="resumeStatus" class="text-xs mt-2 text-gray-500"></p>
         </div>
 
-        <!-- Interview Mode -->
         <div class="mb-5">
             <h3 class="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-2">Interview Mode</h3>
             <div class="flex gap-2">
@@ -142,7 +125,6 @@
             </div>
         </div>
 
-        <!-- Topics -->
         <h3 class="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-3">Select Topic</h3>
         <div class="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
             <button class="subject-btn flex items-center gap-3 bg-zinc-900/30 hover:bg-zinc-800/50 border border-zinc-700/50 hover:border-zinc-500 rounded-xl p-3 transition-all duration-300 text-left whitespace-nowrap flex-shrink-0" data-subject="Self Introduction">
@@ -176,9 +158,8 @@
         </div>
     </aside>
 
-    <!-- ── Main ── -->
+    <!-- Main -->
     <main class="flex-1 lg:w-4/5 flex flex-col bg-black">
-
         <header class="px-4 lg:px-8 py-6 lg:py-8 border-b border-zinc-800/50">
             <div class="text-center max-w-3xl mx-auto">
                 <h1 class="font-space font-bold text-3xl lg:text-5xl xl:text-6xl tracking-tight mb-3">
@@ -202,7 +183,6 @@
             <!-- Interview Panel -->
             <div id="interviewState" class="hidden">
 
-                <!-- Top bar -->
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
                     <div class="flex items-center gap-3">
                         <span id="subjectBadge" class="bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-5 py-2 rounded-full font-semibold shadow-lg">Python</span>
@@ -212,7 +192,6 @@
                     <span class="text-gray-300 text-base font-medium">Question <span id="questionNum" class="text-white font-bold text-lg">1</span>/5</span>
                 </div>
 
-                <!-- Natalie avatar -->
                 <div class="flex flex-col items-center mb-6">
                     <div class="w-44 h-44 lg:w-56 lg:h-56 rounded-full overflow-hidden border-4 border-zinc-700/50 mb-4 shadow-2xl">
                         <img src="https://www.whiteroomstudio.com.sg/wordpress/wp-content/uploads/2021/10/professional-headshot-photography-linkedin-singapore-5.jpeg" alt="Natalie" class="w-full h-full object-cover">
@@ -220,7 +199,6 @@
                     <p class="text-gray-300 text-lg font-medium">Natalie</p>
                 </div>
 
-                <!-- Speaking bubble -->
                 <div class="max-w-2xl mx-auto mb-4">
                     <div id="speakingBubble" class="hidden flex justify-center items-center gap-3 p-5 bg-zinc-900/50 rounded-2xl border border-zinc-800/50">
                         <div class="flex gap-2">
@@ -232,7 +210,7 @@
                     </div>
                 </div>
 
-                <!-- ── Emotion Panel ── -->
+                <!-- Emotion Panel -->
                 <div id="emotionPanel" class="hidden max-w-2xl mx-auto mb-6 bg-zinc-900/40 rounded-2xl border border-zinc-800/50 p-5">
                     <h4 class="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
                         <i class="fas fa-brain text-purple-400"></i> Confidence Analysis
@@ -266,7 +244,7 @@
                     <div id="emotionTips" class="text-xs text-gray-400 italic"></div>
                 </div>
 
-                <!-- ── Voice Controls ── -->
+                <!-- Voice Controls -->
                 <div id="voiceControls" class="flex flex-col items-center gap-4 mb-6">
                     <button id="startInterviewBtn" class="bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-8 py-3 rounded-full font-bold text-base hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300">
                         Start Interview
@@ -281,9 +259,8 @@
                     </button>
                 </div>
 
-                <!-- ── Coding Controls ── -->
+                <!-- Coding Controls -->
                 <div id="codingControls" class="hidden max-w-3xl mx-auto w-full mb-6">
-                    <!-- Problem Statement -->
                     <div id="problemBox" class="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-5 mb-4 hidden">
                         <div class="flex items-center gap-2 mb-2">
                             <i class="fas fa-code text-purple-400"></i>
@@ -292,8 +269,6 @@
                         <p id="problemDescription" class="text-gray-300 text-sm mb-2"></p>
                         <p class="text-gray-500 text-xs"><span class="text-gray-400 font-medium">Example:</span> <span id="problemExample"></span></p>
                     </div>
-
-                    <!-- Language selector -->
                     <div class="flex items-center gap-3 mb-3">
                         <label class="text-gray-400 text-sm">Language:</label>
                         <select id="langSelect" class="bg-zinc-800 border border-zinc-700 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#667eea]">
@@ -301,16 +276,11 @@
                             <option value="javascript">JavaScript</option>
                         </select>
                     </div>
-
-                    <!-- Monaco editor -->
                     <div id="monacoContainer"></div>
-
-                    <!-- Execution output -->
                     <div id="execOutput" class="hidden mt-3 bg-zinc-950 rounded-xl border border-zinc-800 p-4 font-mono text-sm">
                         <p class="text-gray-500 text-xs mb-2">Execution Output</p>
                         <pre id="execText" class="text-green-400 whitespace-pre-wrap"></pre>
                     </div>
-
                     <div class="flex gap-3 mt-4">
                         <button id="startCodingBtn" class="bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:shadow-lg transition-all">
                             Start Coding Interview
@@ -322,14 +292,13 @@
                     <p id="codingStatus" class="text-gray-400 text-sm mt-3">Select a topic and click Start</p>
                 </div>
 
-                <!-- End Interview -->
                 <div class="text-center mb-6">
                     <button id="endInterviewBtn" disabled class="border-2 border-zinc-700 text-gray-300 px-6 py-2.5 rounded-xl transition-all duration-300 hover:border-red-500/50 hover:text-red-400 font-medium text-sm">
                         End Interview
                     </button>
                 </div>
 
-                <!-- ── Feedback Section ── -->
+                <!-- Feedback Section -->
                 <div id="feedbackSection" class="hidden mt-10 pt-6 border-t border-zinc-800/50">
                     <div id="getFeedbackArea" class="text-center mb-6">
                         <p class="text-gray-300 mb-4 text-base">Interview completed!</p>
@@ -372,75 +341,61 @@
                                 <h4 class="text-lg font-bold mb-2 flex items-center gap-2 gradient-heading"><i class="fas fa-chart-line text-cyan-400"></i> Areas of Improvement</h4>
                                 <p id="improvementText" class="text-gray-200 leading-relaxed text-sm"></p>
                             </div>
+                            <!-- Body Language Card -->
+                            <div id="bodyLangCard" class="hidden bg-zinc-900/30 rounded-xl p-5 border border-zinc-800/50 mt-4">
+                                <h4 class="text-lg font-bold mb-4 flex items-center gap-2 gradient-heading">
+                                    <i class="fas fa-eye text-blue-400"></i> Body Language Analysis
+                                </h4>
+                                <div class="flex items-center gap-4 mb-5">
+                                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center shadow-lg flex-shrink-0">
+                                        <span id="bodyLangScore" class="text-xl font-bold text-white">0</span>
+                                    </div>
+                                    <div>
+                                        <p id="bodyLangLabel" class="font-bold text-white text-base">Analyzing...</p>
+                                        <p class="text-gray-400 text-xs">Overall body language score</p>
+                                    </div>
+                                </div>
+                                <div class="space-y-3 mb-4">
+                                    <div>
+                                        <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                            <span class="flex items-center gap-1"><i class="fas fa-eye text-blue-400"></i> Eye Contact</span>
+                                            <span id="eyeContactPct">0%</span>
+                                        </div>
+                                        <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                            <div id="eyeContactBar" class="body-lang-bar-fill h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400" style="width:0%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                            <span class="flex items-center gap-1"><i class="fas fa-person text-green-400"></i> Posture</span>
+                                            <span id="posturePct">0%</span>
+                                        </div>
+                                        <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                            <div id="postureBar" class="body-lang-bar-fill h-full rounded-full bg-gradient-to-r from-green-500 to-green-400" style="width:0%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                            <span class="flex items-center gap-1"><i class="fas fa-smile text-yellow-400"></i> Expression</span>
+                                            <span id="expressionPct">0%</span>
+                                        </div>
+                                        <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                            <div id="expressionBar" class="body-lang-bar-fill h-full rounded-full bg-gradient-to-r from-yellow-500 to-yellow-400" style="width:0%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                            <span class="flex items-center gap-1"><i class="fas fa-camera text-purple-400"></i> Face Centered</span>
+                                            <span id="visibilityPct">0%</span>
+                                        </div>
+                                        <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                            <div id="visibilityBar" class="body-lang-bar-fill h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-400" style="width:0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="bodyLangTips" class="space-y-1"></div>
+                            </div>
                         </div>
-                        <!-- Body Language Card -->
-<div id="bodyLangCard" class="hidden bg-zinc-900/30 rounded-xl p-5 border border-zinc-800/50 mt-4">
-    <h4 class="text-lg font-bold mb-4 flex items-center gap-2 gradient-heading">
-        <i class="fas fa-eye text-blue-400"></i> Body Language Analysis
-    </h4>
-
-    <!-- Overall body language score -->
-    <div class="flex items-center gap-4 mb-5">
-        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center shadow-lg flex-shrink-0">
-            <span id="bodyLangScore" class="text-xl font-bold text-white">0</span>
-        </div>
-        <div>
-            <p id="bodyLangLabel" class="font-bold text-white text-base">Analyzing...</p>
-            <p class="text-gray-400 text-xs">Overall body language score</p>
-        </div>
-    </div>
-
-    <!-- Individual metrics -->
-    <div class="space-y-3 mb-4">
-
-        <!-- Eye Contact -->
-        <div>
-            <div class="flex justify-between text-xs text-gray-400 mb-1">
-                <span class="flex items-center gap-1"><i class="fas fa-eye text-blue-400"></i> Eye Contact</span>
-                <span id="eyeContactPct">0%</span>
-            </div>
-            <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                <div id="eyeContactBar" class="body-lang-bar-fill h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400" style="width:0%"></div>
-            </div>
-        </div>
-
-        <!-- Posture -->
-        <div>
-            <div class="flex justify-between text-xs text-gray-400 mb-1">
-                <span class="flex items-center gap-1"><i class="fas fa-person text-green-400"></i> Posture</span>
-                <span id="posturePct">0%</span>
-            </div>
-            <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                <div id="postureBar" class="body-lang-bar-fill h-full rounded-full bg-gradient-to-r from-green-500 to-green-400" style="width:0%"></div>
-            </div>
-        </div>
-
-        <!-- Expression -->
-        <div>
-            <div class="flex justify-between text-xs text-gray-400 mb-1">
-                <span class="flex items-center gap-1"><i class="fas fa-smile text-yellow-400"></i> Expression</span>
-                <span id="expressionPct">0%</span>
-            </div>
-            <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                <div id="expressionBar" class="body-lang-bar-fill h-full rounded-full bg-gradient-to-r from-yellow-500 to-yellow-400" style="width:0%"></div>
-            </div>
-        </div>
-
-        <!-- Face Visibility -->
-        <div>
-            <div class="flex justify-between text-xs text-gray-400 mb-1">
-                <span class="flex items-center gap-1"><i class="fas fa-camera text-purple-400"></i> Face Centered</span>
-                <span id="visibilityPct">0%</span>
-            </div>
-            <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                <div id="visibilityBar" class="body-lang-bar-fill h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-400" style="width:0%"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tips -->
-    <div id="bodyLangTips" class="space-y-1"></div>
-</div>
                         <div class="text-center mt-8">
                             <button id="newInterviewBtn" class="bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-10 py-3 rounded-xl font-bold text-base hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300">
                                 Start New Interview
@@ -453,6 +408,7 @@
         </div>
     </main>
 </div>
+
 <!-- Webcam PiP -->
 <div id="webcamPip">
     <video id="webcamVideo" autoplay muted playsinline></video>
@@ -461,11 +417,26 @@
     <span id="pipLabel">📷 Live</span>
 </div>
 
+<!-- MediaPipe — loaded here so they init before index.js needs them -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+
+<!-- Main app logic -->
 <script src="index.js"></script>
-<!-- Monaco Editor — load AFTER everything else -->
-    <script>
-        var require = { paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs" } };
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+
+<!-- Monaco Editor — loaded LAST with sandboxed require -->
+<script>
+(function(){
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js';
+    s.onload = function(){
+        window.monacoRequire = require.config({
+            paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }
+        });
+    };
+    document.body.appendChild(s);
+})();
+</script>
+
 </body>
 </html>
